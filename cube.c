@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define FACE32
 // #define FACE64
@@ -18,37 +19,37 @@ typedef uint64_t face_t;
 
 typedef enum {
   UP = 0,
-  LEFT,
-  FRONT,
-  RIGHT,
-  BACK,
-  DOWN
+  LEFT = 1,
+  FRONT = 2,
+  RIGHT = 3,
+  BACK = 4,
+  DOWN = 5
 } cube_side;
 
 typedef enum {
   WHITE = 0,
-  ORANGE,
-  GREEN,
-  RED,
-  BLUE,
-  YELLOW
+  ORANGE = 1,
+  GREEN = 2,
+  RED = 3,
+  BLUE = 4,
+  YELLOW = 5
 } colors;
 
 typedef struct {
   face_t faces[6];
 } cube_t;
 
-#define ROR(x, y) ((face_t)(x) >> (y) | (face_t)(x) << ((8*sizeof(face_t)) - (y)))
+#define ROR(x, y) (face_t)((long)(x) >> (y) | (long)(x) << ((8*sizeof(face_t)) - (y)))
 static inline face_t ror(face_t x, face_t y) {
   return ROR(x, y);
 }
 
 #define PASTE(to, from, M1, M2) {                                           \
-  (from) = ((from) & M ## M1) | ((to) & M ## M2);                           \
+  to = ((to) & ~(M ## M1)) | ((from) & M ## M2);                           \
 }
 
 #define PASTE_ROR(to, from, M1, M2, len) {                                  \
-  (from) = ((from) & M ## M1) | ror((to) & M ## M2, len * sizeof(face_t)); \
+  (to) = ((to) & ~(M ## M1)) | ror((from) & M ## M2, len * sizeof(face_t)); \
 }
 
 #define PASTE_FACE(cube, to, from, M1, M2) { 		\
@@ -62,10 +63,10 @@ static inline face_t ror(face_t x, face_t y) {
 #define ABSTRACT_ROTATION(cube, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3) { \
   ror((cube).faces[face], len * sizeof(face_t));			\
   face_t temporary_var = (cube).faces[f0];					\
-  PASTE_FACE_ROR(cube, f0, f1, M0, M1, C0);					\
+  PASTE_FACE_ROR(cube, f0, f1, M0, M1, C0);				\
   PASTE_FACE_ROR(cube, f1, f2, M1, M2, C1);					\
-  PASTE_FACE_ROR(cube, f2, f3, M1, M2, C1);					\
-  PASTE_FACE_ROR(cube, f3, temporary_var, M1, M2, C1);		\
+  PASTE_FACE_ROR(cube, f2, f3, M2, M3, C2);					\
+  PASTE_ROR((cube).faces[f3], temporary_var, M3, M0, C3);	\
 }
 
 #define DEFINE_ROTATION(rotation, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3)	\
@@ -88,6 +89,7 @@ static const char letters[] = { 'W', 'O', 'G', 'R', 'B', 'Y' };
 
 static char get_tile(face_t face, int tile) {
   uint8_t color = face >> (tile * sizeof(face_t)) & ((1<<sizeof(face_t)) - 1);
+  assert(color <= 5);
   return letters[color];
 
   /* switch (color) {
@@ -144,5 +146,9 @@ static void dump_cube_grid(cube_t *cube) {
 int main() {
   cube_t cube;
   init_cube(&cube);
+  dump_cube_grid(&cube);
+  // PASTE_FACE(cube, DOWN, FRONT, 234, 234)
+  // PASTE(cube.faces[DOWN], cube.faces[FRONT], 234, 234);
+  rotation_r(&cube);
   dump_cube_grid(&cube);
 }
