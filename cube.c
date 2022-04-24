@@ -61,9 +61,9 @@ static inline face_t ror(face_t x, face_t y) {
 }
 
 #define ABSTRACT_ROTATION(cube, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3) { \
-  ror((cube).faces[face], len * sizeof(face_t));			\
+  (cube).faces[face] = ror((cube).faces[face], len * sizeof(face_t));			\
   face_t temporary_var = (cube).faces[f0];					\
-  PASTE_FACE_ROR(cube, f0, f1, M0, M1, C0);				\
+  PASTE_FACE_ROR(cube, f0, f1, M0, M1, C0);					\
   PASTE_FACE_ROR(cube, f1, f2, M1, M2, C1);					\
   PASTE_FACE_ROR(cube, f2, f3, M2, M3, C2);					\
   PASTE_ROR((cube).faces[f3], temporary_var, M3, M0, C3);	\
@@ -74,7 +74,8 @@ static inline void rotation_ ## rotation (cube_t *cube) {	\
   ABSTRACT_ROTATION(*cube, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3);	\
 }
 
-DEFINE_ROTATION(r, RIGHT, 2, FRONT, 234, DOWN, 234, BACK, 670, UP, 234, 0, 4, 4, 0)
+DEFINE_ROTATION(r, RIGHT, 6, FRONT, 234, DOWN, 234, BACK, 670, UP, 234, 0, 4, 4, 0)
+DEFINE_ROTATION(u, UP, 6, FRONT, 012, RIGHT, 012, BACK, 012, LEFT, 012, 0, 0, 0, 0)
 
 static void init_cube(cube_t *cube) {
   for (int face = 0; face < 6; face++) {
@@ -91,16 +92,6 @@ static char get_tile(face_t face, int tile) {
   uint8_t color = face >> (tile * sizeof(face_t)) & ((1<<sizeof(face_t)) - 1);
   assert(color <= 5);
   return letters[color];
-
-  /* switch (color) {
-	case WHITE:
-	  break;
-	case ORANGE:
-	case GREEN:
-	case RED:
-	case BLUE:
-	case YELLOW:
-  } */
 }
 
 static void dump_face(face_t face, char buf[3][3]) {
@@ -147,8 +138,9 @@ int main() {
   cube_t cube;
   init_cube(&cube);
   dump_cube_grid(&cube);
-  // PASTE_FACE(cube, DOWN, FRONT, 234, 234)
-  // PASTE(cube.faces[DOWN], cube.faces[FRONT], 234, 234);
   rotation_r(&cube);
+  rotation_u(&cube);
+  rotation_r(&cube);
+  rotation_u(&cube);
   dump_cube_grid(&cube);
 }
