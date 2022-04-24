@@ -1,3 +1,10 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef _CUBE_H_
+#define _CUBE_H_
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -188,12 +195,12 @@ static int str_to_rot(char *str, rotations *rot) {
   const char rots_char[] = { 'R', 'L', 'U', 'D', 'F', 'B' };
   for (i = 0; i < 6; i++) {
 	if (str[0] == rots_char[i]) {
-	  *rot = i;
+	  *rot = (rotations)i;
 	  if (len == 2) {
 		if (str[1] == PRIM_CHAR) {
-		  *rot += 6;
+		  *(int*)rot += 6;
 		} else if (str[1] == '2') {
-		  *rot += 12;
+		  *(int*)rot += 12;
 		}
 		else {
 		  return -1;
@@ -214,7 +221,7 @@ static rotations* parse_scramble(char **str) {
 	rot_str = str[++sz];
   }
 
-  rotations *rots = calloc(sizeof(rotations), sz+1); 
+  rotations *rots = (rotations *)calloc(sizeof(rotations), sz+1); 
 
   for (i = 0; i < sz; i++) {
 	if (str_to_rot(str[i], &rots[i])) {
@@ -231,7 +238,7 @@ static rotations* parse_scramble(char **str) {
 static char **tokenize_rot_str(char *str) {
   const char *delims = " \n\t";
   ssize_t capacity = 20;
-  char **tokens = calloc(sizeof(char *), capacity);
+  char **tokens = (char **)calloc(sizeof(char *), capacity);
   int tok_cnt = 0;
 
   char *tok = strtok(str, delims);
@@ -239,20 +246,20 @@ static char **tokenize_rot_str(char *str) {
 	tok_cnt++;
 	if (tok_cnt > capacity) {
 	  capacity *= 2;
-	  tokens = realloc(tokens, sizeof(char *) * capacity);
+	  tokens = (char **)realloc(tokens, sizeof(char *) * capacity);
 	}
 	tokens[tok_cnt - 1] = tok;
 	tok = strtok(NULL, delims);
   }
 
-  tokens = realloc(tokens, (sizeof(char *) * (1 + tok_cnt)));
+  tokens = (char **)realloc(tokens, (sizeof(char *) * (1 + tok_cnt)));
   tokens[tok_cnt] = NULL;
 
   return tokens;
 }
 
 static rotations *rot_str_to_rotations(char *str_in) {
-  char *str = alloca(strlen(str_in) + 1);
+  char *str = (char *)alloca(strlen(str_in) + 1);
   memcpy(str, str_in, strlen(str_in) + 1);
 
   char **tokens = tokenize_rot_str(str);
@@ -294,7 +301,8 @@ static const char *terminal_letters[] = {
 };
 
 static colors get_tile_color(face_t face, int tile) {
-  colors color = face >> (tile * sizeof(face_t)) & ((1<<sizeof(face_t)) - 1);
+  colors color = (colors)((face >> (tile * sizeof(face_t))) & 
+						  ((1<<sizeof(face_t)) - 1));
   assert(color <= 5);
   return color;
 }
@@ -355,10 +363,23 @@ static void dump_cube_grid(cube_t *cube) {
 #define kh_cube_hash_func(cube) (khint32_t)((first_64(cube)*P1+second_64(cube)*P2+third_64(cube)*P3)%(uint64_t)MOD_M)
 #define kh_cube_hash_equal(cube1, cube2) (first_64(cube1) == first_64(cube2) && second_64(cube1) == second_64(cube2) && third_64(cube1) == third_64(cube2))
 
-KHASH_INIT(cube, cube_t, int, 0, kh_cube_hash_func, kh_cube_hash_equal)
 
 #endif /* FACE32 */ 
 
+/******************************************************************************/
+/* Algorithm ******************************************************************/
+
+typedef uint32_t rot_cnt_t;
+#define build_rot_cnt(rot, cnt) (rot_cnt_t)(((uint32_t)rot << 16)|cnt)
+#define get_rot(rot_cnt) (((uint32_t)rot_cnt)>>16)
+#define get_cnt(rot_cnt) (uint32_t)(rot_cnt & 0xffff)
+
+KHASH_INIT(cube, cube_t, rot_cnt_t, 1, kh_cube_hash_func, kh_cube_hash_equal)
+
+khash_t(cube) *generate_pruning_table(int depth) {
+  khash_t(cube) *h = kh_init(cube); 
+
+}
 
 /******************************************************************************/
 /* Main ***********************************************************************/
@@ -367,7 +388,7 @@ void test_scrambling() {
   cube_t cube;
   int i;
   char *buf = NULL;
-  ssize_t sz;
+  size_t sz;
 
   while (getline(&buf, &sz, stdin) != -1) {
 	init_cube(&cube);
@@ -387,25 +408,8 @@ void test_scrambling() {
 	free(buf);
 }
 
-int main() {
-  int ret;
-  khiter_t k;
-  cube_t cube;
-  khash_t(cube) *h;
+#endif /* _CUBE_H_ */
 
-  init_cube(&cube);
-  h = kh_init(cube);
-
-  kh_put(cube, h, cube, &ret);
-
-  rotate_from_str(&cube, "R D F");  
-  
-  kh_put(cube, h, cube, &ret);
-  for (k = kh_begin(h); k != kh_end(h); ++k) {
-	if (kh_exist(h, k)) {
-	  dump_cube_grid(&kh_key(h, k));
-	}
-  }
-
-  kh_destroy(cube, h);
+#ifdef __cplusplus
 }
+#endif
