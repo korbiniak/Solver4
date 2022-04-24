@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <unistd.h>
 
 #define FACE32
 // #define FACE64
@@ -114,6 +115,141 @@ DEFINE_ROTATION_180(d2, DOWN, FRONT, 456, BACK, 456, RIGHT, 456, LEFT, 456, 0, 0
 DEFINE_ROTATION_180(f2, FRONT, UP, 456, DOWN, 012, RIGHT, 670, LEFT, 234, 4, 4)
 DEFINE_ROTATION_180(b2, BACK, UP, 012, DOWN, 456, RIGHT, 234, LEFT, 670, 4, 4)
 
+typedef enum {
+  ROT_R = 0,
+  ROT_L,
+  ROT_U,
+  ROT_D,
+  ROT_F,
+  ROT_B,
+  ROT_RP,
+  ROT_LP,
+  ROT_UP,
+  ROT_DP,
+  ROT_FP,
+  ROT_BP,
+  ROT_R2,
+  ROT_L2,
+  ROT_U2,
+  ROT_D2,
+  ROT_F2,
+  ROT_B2,
+  NULL_ROT
+} rotations;
+
+typedef void (*rot_f)(cube_t *);
+
+static const rot_f rot_func[] = {
+  rotation_r,
+  rotation_l,
+  rotation_u,
+  rotation_d,
+  rotation_f,
+  rotation_b,
+  rotation_rp,
+  rotation_lp,
+  rotation_up,
+  rotation_dp,
+  rotation_fp,
+  rotation_bp,
+  rotation_r2,
+  rotation_l2,
+  rotation_u2,
+  rotation_d2,
+  rotation_f2,
+  rotation_b2,
+};
+
+static void perform_rotations(cube_t *cube, rotations rots[]) {
+  while(*rots != NULL_ROT) {
+	rot_func[*rots](cube);	
+	rots++;
+  }
+}
+
+#define PRIM_CHAR '\''
+
+static int str_to_rot(char *str, rotations *rot) {
+  ssize_t len = strlen(str);
+  int i;
+
+  if (len == 0 || len > 2) {
+	return -1;
+  }
+
+  const char rots_char[] = { 'R', 'L', 'U', 'D', 'F', 'B' };
+  for (i = 0; i < 6; i++) {
+	if (str[0] == rots_char[i]) {
+	  *rot = i;
+	  if (len == 2) {
+		if (str[1] == PRIM_CHAR) {
+		  *rot += 6;
+		} else if (str[1] == '2') {
+		  *rot += 12;
+		}
+		else {
+		  return -1;
+		}
+	  }
+	  return 0;
+	}
+  }
+  return -1;
+}
+
+static rotations* parse_scramble(char **str) {
+  ssize_t sz = 0;
+  ssize_t i = 0;
+  char *rot_str = str[0];
+  while (rot_str) {
+	printf("token: %s\n", rot_str);
+	rot_str = str[++sz];
+  }
+
+  rotations *rots = calloc(sizeof(rotations), sz+1); 
+
+  for (i = 0; i < sz; i++) {
+	if (str_to_rot(str[i], &rots[i])) {
+	  free(rots);
+	  return NULL;
+	}
+  }
+
+  rots[sz] = NULL_ROT;
+
+  return rots;
+}
+
+static char **tokenize_rot_str(char *str) {
+  const char *delims = " \n\t";
+  ssize_t capacity = 20;
+  char **tokens = calloc(sizeof(char *), capacity);
+  int tok_cnt = 0;
+
+  char *tok = strtok(str, delims);
+  while (tok != NULL) {
+	tok_cnt++;
+	if (tok_cnt > capacity) {
+	  capacity *= 2;
+	  tokens = realloc(tokens, sizeof(char *) * capacity);
+	}
+	tokens[tok_cnt - 1] = tok;
+	tok = strtok(NULL, delims);
+  }
+
+  tokens = realloc(tokens, (sizeof(char *) * (1 + tok_cnt)));
+  tokens[tok_cnt] = NULL;
+
+  return tokens;
+}
+
+static rotations *rot_str_to_rotations(char *str) {
+  char **tokens = tokenize_rot_str(str);
+  rotations *rots = parse_scramble(tokens); 
+  free(tokens);
+  return rots;
+}
+
 static void init_cube(cube_t *cube) {
   for (int face = 0; face < 6; face++) {
 	cube->faces[face] = 0;
@@ -184,29 +320,22 @@ static void dump_cube_grid(cube_t *cube) {
 int main() {
   cube_t cube;
   int i;
-  init_cube(&cube);
+  char *buf = NULL;
+  ssize_t sz;
 
-  for (i = 0; i < 1; i++) {
-	rotation_r(&cube);
-	rotation_u(&cube);
-	rotation_f(&cube);
-	rotation_l(&cube);
-	rotation_b(&cube);
-	rotation_d(&cube);
-
-	rotation_rp(&cube);
-	rotation_up(&cube);
-	rotation_fp(&cube);
-	rotation_lp(&cube);
-	rotation_bp(&cube);
-	rotation_dp(&cube);
-
-	rotation_r2(&cube);
-	rotation_u2(&cube);
-	rotation_f2(&cube);
-	rotation_l2(&cube);
-	rotation_b2(&cube);
-	rotation_d2(&cube);
+  while (getline(&buf, &sz, stdin) != -1) {
+	init_cube(&cube);
+	if (sz == 0) break;
+	printf("> %s\n", buf);
+	rotations *rots = rot_str_to_rotations(buf);
+	if (rots) {
+	  perform_rotations(&cube, rots);
+	  free(rots);
+	  dump_cube_grid(&cube);
+	} else {
+	  printf("Rots == null :o\n");
+	}
   }
-  dump_cube_grid(&cube);
+  if (buf)
+	free(buf);
 }
