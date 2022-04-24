@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <unistd.h>
 
+#include "khash.h"
+
 #define FACE32
 // #define FACE64
 
@@ -40,6 +42,9 @@ typedef enum {
 typedef struct {
   face_t faces[6];
 } cube_t;
+
+/******************************************************************************/
+/* Macros for generating rotation functions ***********************************/
 
 #define ROR(x, y) (face_t)((long)(x) >> (y) | (long)(x) << ((8*sizeof(face_t)) - (y)))
 static inline face_t ror(face_t x, face_t y) {
@@ -167,6 +172,9 @@ static void perform_rotations(cube_t *cube, rotations rots[]) {
   }
 }
 
+/******************************************************************************/
+/* Parsing rotations from input ***********************************************/
+
 #define PRIM_CHAR '\''
 
 static int str_to_rot(char *str, rotations *rot) {
@@ -243,11 +251,24 @@ static char **tokenize_rot_str(char *str) {
   return tokens;
 }
 
-static rotations *rot_str_to_rotations(char *str) {
+static rotations *rot_str_to_rotations(char *str_in) {
+  char *str = alloca(strlen(str_in) + 1);
+  memcpy(str, str_in, strlen(str_in) + 1);
+
   char **tokens = tokenize_rot_str(str);
   rotations *rots = parse_scramble(tokens); 
   free(tokens);
   return rots;
+}
+
+static int rotate_from_str(cube_t *cube, char *str) {
+  rotations *rot = rot_str_to_rotations(str);
+  if (!rot) {
+	return -1;
+  }
+  perform_rotations(cube, rot);
+  free(rot);
+  return 0;
 }
 
 static void init_cube(cube_t *cube) {
@@ -258,6 +279,9 @@ static void init_cube(cube_t *cube) {
 	}
   }
 }
+
+/******************************************************************************/
+/* Printint cube state ********************************************************/
 
 static const char letters[] = { 'W', 'O', 'G', 'R', 'B', 'Y' };
 static const char *terminal_letters[] = {
@@ -317,7 +341,29 @@ static void dump_cube_grid(cube_t *cube) {
   }
 }
 
-int main() {
+/******************************************************************************/
+/* Hash map *******************************************************************/
+
+#ifdef FACE32
+#define P1 ((uint64_t)516077606561857057)
+#define P2 ((uint64_t)217685325020058187) 
+#define P3 ((uint64_t)843829397461693519)
+#define MOD_M 4200892139
+#define first_64(cube) (*(uint64_t*)((cube).faces))
+#define second_64(cube) (*(uint64_t*)((cube).faces+2))
+#define third_64(cube) (*(uint64_t*)((cube).faces+4))
+#define kh_cube_hash_func(cube) (khint32_t)((first_64(cube)*P1+second_64(cube)*P2+third_64(cube)*P3)%(uint64_t)MOD_M)
+#define kh_cube_hash_equal(cube1, cube2) (first_64(cube1) == first_64(cube2) && second_64(cube1) == second_64(cube2) && third_64(cube1) == third_64(cube2))
+
+KHASH_INIT(cube, cube_t, int, 0, kh_cube_hash_func, kh_cube_hash_equal)
+
+#endif /* FACE32 */ 
+
+
+/******************************************************************************/
+/* Main ***********************************************************************/
+
+void test_scrambling() {
   cube_t cube;
   int i;
   char *buf = NULL;
@@ -336,6 +382,30 @@ int main() {
 	  printf("Rots == null :o\n");
 	}
   }
+
   if (buf)
 	free(buf);
+}
+
+int main() {
+  int ret;
+  khiter_t k;
+  cube_t cube;
+  khash_t(cube) *h;
+
+  init_cube(&cube);
+  h = kh_init(cube);
+
+  kh_put(cube, h, cube, &ret);
+
+  rotate_from_str(&cube, "R D F");  
+  
+  kh_put(cube, h, cube, &ret);
+  for (k = kh_begin(h); k != kh_end(h); ++k) {
+	if (kh_exist(h, k)) {
+	  dump_cube_grid(&kh_key(h, k));
+	}
+  }
+
+  kh_destroy(cube, h);
 }
