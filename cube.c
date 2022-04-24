@@ -70,7 +70,7 @@ static inline face_t ror(face_t x, face_t y) {
   PASTE_ROR((cube).faces[f3], temporary_var, M3, M0, C3);	\
 }
 
-#define ABSTRACT_ROTATION_180(cube, face, f0, M0, f1, M1, f2, M2, f3, M3, C01, c02) {	\
+#define ABSTRACT_ROTATION_180(cube, face, f0, M0, f1, M1, f2, M2, f3, M3, C01, C23) {	\
   (cube).faces[face] = ror((cube).faces[face], 4 * sizeof(face_t));	\
   face_t temporary_var = (cube).faces[f0];							\
   PASTE_FACE_ROR(cube, f0, f1, M0, M1, C01);						\
@@ -83,6 +83,11 @@ static inline face_t ror(face_t x, face_t y) {
 #define DEFINE_ROTATION_90(rotation, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3)	\
 static void rotation_ ## rotation (cube_t *cube) {	\
   ABSTRACT_ROTATION_90(*cube, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3);	\
+}
+
+#define DEFINE_ROTATION_180(rotation, face, f0, M0, f1, M1, f2, M2, f3, M3, C01, C23)	\
+static void rotation_ ## rotation (cube_t *cube) {	\
+  ABSTRACT_ROTATION_180(*cube, face, f0, M0, f1, M1, f2, M2, f3, M3, C01, C23);	\
 }
 
 /* Clockwise rotations */
@@ -100,6 +105,14 @@ DEFINE_ROTATION_90(up, UP, 2, FRONT, 012, LEFT, 012, BACK, 012, RIGHT, 012, 0, 0
 DEFINE_ROTATION_90(dp, DOWN, 2, FRONT, 456, RIGHT, 456, BACK, 456, LEFT, 456, 0, 0, 0, 0)
 DEFINE_ROTATION_90(fp, FRONT, 2, UP, 456, RIGHT, 670, DOWN, 012, LEFT, 234, 2, 2, 2, 2)
 DEFINE_ROTATION_90(bp, BACK, 2, UP, 012, LEFT, 670, DOWN, 456, RIGHT, 234, 6, 6, 6, 6)
+
+/* Double clockwise */
+DEFINE_ROTATION_180(r2, RIGHT, FRONT, 234, BACK, 670, UP, 234, DOWN, 234, 4, 0)
+DEFINE_ROTATION_180(l2, LEFT, FRONT, 670, BACK, 234, UP, 670, DOWN, 670, 4, 0)
+DEFINE_ROTATION_180(u2, UP, FRONT, 012, BACK, 012, RIGHT, 012, LEFT, 012, 0, 0)
+DEFINE_ROTATION_180(d2, DOWN, FRONT, 456, BACK, 456, RIGHT, 456, LEFT, 456, 0, 0)
+DEFINE_ROTATION_180(f2, FRONT, UP, 456, DOWN, 012, RIGHT, 670, LEFT, 234, 4, 4)
+DEFINE_ROTATION_180(b2, BACK, UP, 012, DOWN, 456, RIGHT, 234, LEFT, 670, 4, 4)
 
 static void init_cube(cube_t *cube) {
   for (int face = 0; face < 6; face++) {
@@ -173,7 +186,7 @@ int main() {
   int i;
   init_cube(&cube);
 
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 1; i++) {
 	rotation_r(&cube);
 	rotation_u(&cube);
 	rotation_f(&cube);
@@ -181,12 +194,19 @@ int main() {
 	rotation_b(&cube);
 	rotation_d(&cube);
 
-	rotation_dp(&cube);
-	rotation_bp(&cube);
-	rotation_lp(&cube);
-	rotation_fp(&cube);
-	rotation_up(&cube);
 	rotation_rp(&cube);
+	rotation_up(&cube);
+	rotation_fp(&cube);
+	rotation_lp(&cube);
+	rotation_bp(&cube);
+	rotation_dp(&cube);
+
+	rotation_r2(&cube);
+	rotation_u2(&cube);
+	rotation_f2(&cube);
+	rotation_l2(&cube);
+	rotation_b2(&cube);
+	rotation_d2(&cube);
   }
   dump_cube_grid(&cube);
 }
