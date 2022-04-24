@@ -87,11 +87,19 @@ static void rotation_ ## rotation (cube_t *cube) {	\
 
 /* Clockwise rotations */
 DEFINE_ROTATION_90(r, RIGHT, 6, FRONT, 234, DOWN, 234, BACK, 670, UP, 234, 0, 4, 4, 0)
-DEFINE_ROTATION_90(u, UP, 6, FRONT, 012, RIGHT, 012, BACK, 012, LEFT, 012, 0, 0, 0, 0)
 DEFINE_ROTATION_90(l, LEFT, 6, FRONT, 670, UP, 670, BACK, 234, DOWN, 670, 0, 4, 4, 0)
-DEFINE_ROTATION_90(f, FRONT, 6, UP, 456, LEFT, 234, DOWN, 012, RIGHT, 670, 6, 6, 6, 6)
+DEFINE_ROTATION_90(u, UP, 6, FRONT, 012, RIGHT, 012, BACK, 012, LEFT, 012, 0, 0, 0, 0)
 DEFINE_ROTATION_90(d, DOWN, 6, FRONT, 456, LEFT, 456, BACK, 456, RIGHT, 456, 0, 0, 0, 0)
+DEFINE_ROTATION_90(f, FRONT, 6, UP, 456, LEFT, 234, DOWN, 012, RIGHT, 670, 6, 6, 6, 6)
 DEFINE_ROTATION_90(b, BACK, 6, UP, 012, RIGHT, 234, DOWN, 456, LEFT, 670, 2, 2, 2, 2)
+
+/* Counter clockwise rotations */
+DEFINE_ROTATION_90(rp, RIGHT, 2, FRONT, 234, UP, 234, BACK, 670, DOWN, 234, 0, 4, 4, 0)
+DEFINE_ROTATION_90(lp, LEFT, 2, FRONT, 670, DOWN, 670, BACK, 234, UP, 670, 0, 4, 4, 0)
+DEFINE_ROTATION_90(up, UP, 2, FRONT, 012, LEFT, 012, BACK, 012, RIGHT, 012, 0, 0, 0, 0)
+DEFINE_ROTATION_90(dp, DOWN, 2, FRONT, 456, RIGHT, 456, BACK, 456, LEFT, 456, 0, 0, 0, 0)
+DEFINE_ROTATION_90(fp, FRONT, 2, UP, 456, RIGHT, 670, DOWN, 012, LEFT, 234, 2, 2, 2, 2)
+DEFINE_ROTATION_90(bp, BACK, 2, UP, 012, LEFT, 670, DOWN, 456, RIGHT, 234, 6, 6, 6, 6)
 
 static void init_cube(cube_t *cube) {
   for (int face = 0; face < 6; face++) {
@@ -172,6 +180,13 @@ int main() {
 	rotation_l(&cube);
 	rotation_b(&cube);
 	rotation_d(&cube);
+
+	rotation_dp(&cube);
+	rotation_bp(&cube);
+	rotation_lp(&cube);
+	rotation_fp(&cube);
+	rotation_up(&cube);
+	rotation_rp(&cube);
   }
   dump_cube_grid(&cube);
 }
