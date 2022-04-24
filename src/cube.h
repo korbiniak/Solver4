@@ -158,8 +158,7 @@ static const rot_f rot_func[] = {
   rotation_d,
   rotation_f,
   rotation_b,
-  rotation_rp,
-  rotation_lp,
+  rotation_rp, rotation_lp,
   rotation_up,
   rotation_dp,
   rotation_fp,
@@ -182,6 +181,13 @@ static void perform_rotations(cube_t *cube, rotations rots[]) {
 	rot_func[*rots](cube);	
 	rots++;
   }
+}
+
+static rotations reverse_rotation(rotations rot) {
+  int ret = (int)rot;
+  if ((int)rot < 6) ret = (int)rot + 6;
+  if ((int)rot >= 6 && rot < 12) ret = (int)rot - 6;
+  return (rotations)ret;
 }
 
 /******************************************************************************/
@@ -222,7 +228,7 @@ static rotations* parse_scramble(char **str) {
   ssize_t i = 0;
   char *rot_str = str[0];
   while (rot_str) {
-	printf("token: %s\n", rot_str);
+	// printf("token: %s\n", rot_str);
 	rot_str = str[++sz];
   }
 
@@ -372,7 +378,7 @@ static void dump_cube_grid(cube_t *cube) {
 
 typedef uint32_t rot_cnt_t;
 #define build_rot_cnt(rot, cnt) (rot_cnt_t)(((uint32_t)(rot) << 16)|(cnt))
-#define get_rot(rot_cnt) (((uint32_t)(rot_cnt))>>16)
+#define get_rot(rot_cnt) (rotations)(((uint32_t)(rot_cnt))>>16)
 #define get_cnt(rot_cnt) (uint32_t)((rot_cnt) & 0xffff)
 
 KHASH_INIT(cube, cube_t, rot_cnt_t, 1, kh_cube_hash_func, kh_cube_hash_equal)

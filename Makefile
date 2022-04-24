@@ -1,5 +1,6 @@
 CXX = g++
-CXXFLAGS = -std=c++14 -g -Wall -Wshadow -Wextra -fsanitize=address -fsanitize=undefined
+# CXXFLAGS = -std=c++14 -g -Wall -Wshadow -Wextra -fsanitize=address -fsanitize=undefined
+CXXFLAGS = -std=c++14 -O3
 
 C_FILES = $(wildcard src/*.cpp)
 H_FILES = $(wildcard src/*.h)
