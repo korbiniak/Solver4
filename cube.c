@@ -32,7 +32,8 @@ typedef enum {
   GREEN = 2,
   RED = 3,
   BLUE = 4,
-  YELLOW = 5
+  YELLOW = 5,
+  EMPTY_COLOR = 6
 } colors;
 
 typedef struct {
@@ -70,7 +71,7 @@ static inline face_t ror(face_t x, face_t y) {
 }
 
 #define DEFINE_ROTATION(rotation, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3)	\
-static inline void rotation_ ## rotation (cube_t *cube) {	\
+static void rotation_ ## rotation (cube_t *cube) {	\
   ABSTRACT_ROTATION(*cube, face, len, f0, M0, f1, M1, f2, M2, f3, M3, C0, C1, C2, C3);	\
 }
 
@@ -87,34 +88,43 @@ static void init_cube(cube_t *cube) {
 }
 
 static const char letters[] = { 'W', 'O', 'G', 'R', 'B', 'Y' };
+static const char *terminal_letters[] = {
+  "W",
+  "\e[35mO\e[0m",
+  "\e[32mG\e[0m",
+  "\e[31mR\e[0m",
+  "\e[34mB\e[0m",
+  "\e[33mY\e[0m",
+};
 
-static char get_tile(face_t face, int tile) {
-  uint8_t color = face >> (tile * sizeof(face_t)) & ((1<<sizeof(face_t)) - 1);
+static colors get_tile_color(face_t face, int tile) {
+  colors color = face >> (tile * sizeof(face_t)) & ((1<<sizeof(face_t)) - 1);
   assert(color <= 5);
-  return letters[color];
+  return color;
 }
 
-static void dump_face(face_t face, char buf[3][3]) {
-  buf[0][0] = get_tile(face, 0); 
-  buf[0][1] = get_tile(face, 1); 
-  buf[0][2] = get_tile(face, 2); 
-  buf[1][0] = get_tile(face, 7); 
-  buf[1][2] = get_tile(face, 3); 
-  buf[2][0] = get_tile(face, 6); 
-  buf[2][1] = get_tile(face, 5); 
-  buf[2][2] = get_tile(face, 4); 
+static void dump_face(face_t face, colors buf[3][3]) {
+  buf[0][0] = get_tile_color(face, 0); 
+  buf[0][1] = get_tile_color(face, 1); 
+  buf[0][2] = get_tile_color(face, 2); 
+  buf[1][0] = get_tile_color(face, 7); 
+  buf[1][2] = get_tile_color(face, 3); 
+  buf[2][0] = get_tile_color(face, 6); 
+  buf[2][1] = get_tile_color(face, 5); 
+  buf[2][2] = get_tile_color(face, 4); 
+  assert(buf[0][0] <= 5);
 }
 
-static void fill_face(cube_t *cube, int face, char buf[3][3]) {
+static void fill_face(cube_t *cube, cube_side face, colors buf[3][3]) {
   dump_face(cube->faces[face], buf);
-  buf[1][1] = letters[face];
+  buf[1][1] = (colors)face;
 }
 
 static void dump_cube_grid(cube_t *cube) {
   int i, j, row, col;
-  char buf[3][4][3][3];	/* XD */
+  colors buf[3][4][3][3];	/* XD */
 
-  memset(buf, ' ', 3*4*3*3);
+  memset(buf, -1, 3*4*3*3*sizeof(colors));
   fill_face(cube, UP, buf[0][1]);
   fill_face(cube, LEFT, buf[1][0]);
   fill_face(cube, FRONT, buf[1][1]);
@@ -126,7 +136,8 @@ static void dump_cube_grid(cube_t *cube) {
 	for (row = 0; row < 3; row++) {
 	  for (j = 0; j < 4; j++) {
 		for (col = 0; col < 3; col++) {
-		  printf("%c", buf[i][j][row][col]);
+		  colors color = buf[i][j][row][col];
+		  printf("%s", (color == -1 ? " " : terminal_letters[color])); 
 		} 
 	  }
 	  printf("\n");
@@ -136,11 +147,12 @@ static void dump_cube_grid(cube_t *cube) {
 
 int main() {
   cube_t cube;
+  int i;
   init_cube(&cube);
-  dump_cube_grid(&cube);
-  rotation_r(&cube);
-  rotation_u(&cube);
-  rotation_r(&cube);
-  rotation_u(&cube);
+
+  for (i = 0; i < 3; i++) {
+	rotation_r(&cube);
+	rotation_u(&cube);
+  }
   dump_cube_grid(&cube);
 }
