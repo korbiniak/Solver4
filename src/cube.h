@@ -1,9 +1,9 @@
+#ifndef _CUBE_H_
+#define _CUBE_H_
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifndef _CUBE_H_
-#define _CUBE_H_
 
 #include <stdio.h>
 #include <stdint.h>
@@ -172,6 +172,11 @@ static const rot_f rot_func[] = {
   rotation_b2,
 };
 
+static inline void perform_rotation(cube_t *cube, rotations rot) {
+  if (rot != NULL_ROT)
+	rot_func[rot](cube);
+}
+
 static void perform_rotations(cube_t *cube, rotations rots[]) {
   while(*rots != NULL_ROT) {
 	rot_func[*rots](cube);	
@@ -328,7 +333,9 @@ static void dump_cube_grid(cube_t *cube) {
   int i, j, row, col;
   colors buf[3][4][3][3];	/* XD */
 
-  memset(buf, -1, 3*4*3*3*sizeof(colors));
+  for (i = 0; i < 3*4*3*3; i++) {
+	((colors *)buf)[i] = EMPTY_COLOR;
+  }
   fill_face(cube, UP, buf[0][1]);
   fill_face(cube, LEFT, buf[1][0]);
   fill_face(cube, FRONT, buf[1][1]);
@@ -341,7 +348,7 @@ static void dump_cube_grid(cube_t *cube) {
 	  for (j = 0; j < 4; j++) {
 		for (col = 0; col < 3; col++) {
 		  colors color = buf[i][j][row][col];
-		  printf("%s", (color == -1 ? " " : terminal_letters[color])); 
+		  printf("%s", (color == EMPTY_COLOR ? " " : terminal_letters[color])); 
 		} 
 	  }
 	  printf("\n");
@@ -363,28 +370,23 @@ static void dump_cube_grid(cube_t *cube) {
 #define kh_cube_hash_func(cube) (khint32_t)((first_64(cube)*P1+second_64(cube)*P2+third_64(cube)*P3)%(uint64_t)MOD_M)
 #define kh_cube_hash_equal(cube1, cube2) (first_64(cube1) == first_64(cube2) && second_64(cube1) == second_64(cube2) && third_64(cube1) == third_64(cube2))
 
+typedef uint32_t rot_cnt_t;
+#define build_rot_cnt(rot, cnt) (rot_cnt_t)(((uint32_t)(rot) << 16)|(cnt))
+#define get_rot(rot_cnt) (((uint32_t)(rot_cnt))>>16)
+#define get_cnt(rot_cnt) (uint32_t)((rot_cnt) & 0xffff)
+
+KHASH_INIT(cube, cube_t, rot_cnt_t, 1, kh_cube_hash_func, kh_cube_hash_equal)
 
 #endif /* FACE32 */ 
 
 /******************************************************************************/
 /* Algorithm ******************************************************************/
 
-typedef uint32_t rot_cnt_t;
-#define build_rot_cnt(rot, cnt) (rot_cnt_t)(((uint32_t)rot << 16)|cnt)
-#define get_rot(rot_cnt) (((uint32_t)rot_cnt)>>16)
-#define get_cnt(rot_cnt) (uint32_t)(rot_cnt & 0xffff)
-
-KHASH_INIT(cube, cube_t, rot_cnt_t, 1, kh_cube_hash_func, kh_cube_hash_equal)
-
-khash_t(cube) *generate_pruning_table(int depth) {
-  khash_t(cube) *h = kh_init(cube); 
-
-}
 
 /******************************************************************************/
 /* Main ***********************************************************************/
 
-void test_scrambling() {
+static void test_scrambling() {
   cube_t cube;
   int i;
   char *buf = NULL;
@@ -408,8 +410,9 @@ void test_scrambling() {
 	free(buf);
 }
 
-#endif /* _CUBE_H_ */
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _CUBE_H_ */
