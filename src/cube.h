@@ -149,6 +149,13 @@ typedef enum {
   NULL_ROT
 } rotations;
 
+static char *rot_strings[] = { 
+  "R", "L", "U", "D", "F", "B",
+  "R'", "L'", "U'", "D'", "F'", "B'",
+  "R2", "L2", "U2", "D2", "F2", "B2",
+  "",
+};
+
 typedef void (*rot_f)(cube_t *);
 
 static const rot_f rot_func[] = {
@@ -158,7 +165,8 @@ static const rot_f rot_func[] = {
   rotation_d,
   rotation_f,
   rotation_b,
-  rotation_rp, rotation_lp,
+  rotation_rp, 
+  rotation_lp,
   rotation_up,
   rotation_dp,
   rotation_fp,
@@ -247,7 +255,7 @@ static rotations* parse_scramble(char **str) {
 }
 
 static char **tokenize_rot_str(char *str) {
-  const char *delims = " \n\t";
+  const char *delims = " \n\t,";
   ssize_t capacity = 20;
   char **tokens = (char **)calloc(sizeof(char *), capacity);
   int tok_cnt = 0;
@@ -296,6 +304,10 @@ static void init_cube(cube_t *cube) {
 	  cube->faces[face] |= (face << (tile * sizeof(face_t)));
 	}
   }
+}
+
+static char *rot_to_str(rotations rot) {
+  return rot_strings[(int)rot];
 }
 
 /******************************************************************************/

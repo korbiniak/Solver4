@@ -14,25 +14,23 @@ int main() {
   while (getline(&buf, &sz, stdin) != -1) {
 	init_cube(&cube);
 	if (sz == 0) break;
-	printf("> %s\n", buf);
 	rotate_from_str(&cube, buf);		
 
 	dump_cube_grid(&cube);
 	timer = clock();
 	auto result = solver.solve(cube);
 	timer = clock() - timer;
-	std::cerr << "Time: " << (float)timer/CLOCKS_PER_SEC << "\n"; 
-
-
-	for (auto rot: result) {
-	  std::cerr << rot << " ";
-	}
-	std::cerr << "\n";
+	std::cerr << "Time: " << (float)timer/CLOCKS_PER_SEC << "s\n";
 
 	for (auto rot: result) {
-	  perform_rotation(&cube, rot);
+	  std::cerr << rot_to_str(rot) << " ";
 	}
-	dump_cube_grid(&cube);
+	std::cerr << "len: " << result.size() << "\n";
+
+	// for (auto rot: result) {
+	//   perform_rotation(&cube, rot);
+	// }
+	// dump_cube_grid(&cube);
   }
 
   if (buf)

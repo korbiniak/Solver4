@@ -83,10 +83,13 @@ std::vector<rotations> Solver::get_solve_pruning(cube_t cube) {
 
 #define TILE_VAL(i) (face>>((i)<<2)&0xf)
 #define CMP_TILES(i, j) (uint32_t)(!!(TILE_VAL(i)==TILE_VAL(j)))
+#define MAX_MOVES_CNT 20 
 
 /* Count number of neibourgh tiles of the same color */
 __attribute__((optimize("unroll-loops")))
 heur_t Solver::heuristic(const cube_t cube, const uint16_t moves_cnt) {
+  if (moves_cnt > MAX_MOVES_CNT)
+	return INT32_MIN; 
   heur_t value = 0;
   int i, j;
   face_t face;
@@ -194,7 +197,7 @@ std::vector<rotations> Solver::solve(const cube_t cube) {
 	}
   }
 
-  std::cerr << "Found solution!\n" << "\n";
+  // std::cerr << "Found solution!\n";
   auto res = retrieve_solution(state);
   auto prun_res = get_solve_pruning(state);
   //std::cerr << prun_res.size() << "\n";
