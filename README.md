@@ -5,7 +5,10 @@ Algorithm for finding a solution for given Rubik's cube scramble.
 At the moment the solver is working, it is pretty fast actually (faster than
 I tought it would be and only tested on a few tests written by hand :P).
 
-TODOs:
+## Building
+Simply run `make` in the root directory of the project. I compile it on Linux.
+
+## TODOs:
   - Move code from [cube.h](./src/cube.h) to a normal source file, not a header file...
   - Clean up the code in general
   - Document the code (mainly [cube.h](./src/cube.h)), in particular describe
